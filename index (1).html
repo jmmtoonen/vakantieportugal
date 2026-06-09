@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Roadtrip Portugal · Porto → Faro</title>
+<meta name="description" content="Een interactief reisplan voor een roadtrip van Porto naar Faro — 14 nachten, met de huurauto. Steden, wijn, natuur en stranden." />
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Spline+Sans+Mono:wght@500;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --azul:#173A6A;        /* azulejo blue, the lead */
+    --azul-deep:#0E2440;   /* darkest tile blue */
+    --azul-mid:#33598C;    /* line work on tiles */
+    --glaze:#F4EFE3;       /* glazed tile / page bg */
+    --paper:#FBF8F0;       /* card */
+    --telha:#C2542B;       /* terracotta rooftop accent */
+    --mar:#157067;         /* atlantic jade */
+    --ouro:#CF9B33;        /* algarve gold */
+    --ink:#1C1B19;
+    --ink-soft:#4A4742;
+    --line:#E3DCCB;
+    --shadow:0 1px 2px rgba(14,36,64,.06),0 12px 30px -16px rgba(14,36,64,.28);
+    --nav-h:60px;
+    --display:'Bricolage Grotesque',system-ui,sans-serif;
+    --body:'Newsreader',Georgia,'Times New Roman',serif;
+    --mono:'Spline Sans Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    margin:0;background:var(--glaze);color:var(--ink);
+    font-family:var(--body);font-size:18px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.eyebrow,.tile-num,.chip,.nav__links a,.stat__num,.stat__label,.cta{font-family:var(--display)}
+  a{color:inherit}
+  img{max-width:100%}
+
+  /* ---------- top nav ---------- */
+  .nav{
+    position:sticky;top:0;z-index:1000;height:var(--nav-h);
+    background:rgba(244,239,227,.86);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:18px;
+    padding:0 clamp(16px,4vw,40px);
+  }
+  .nav__brand{font-family:var(--display);font-weight:800;letter-spacing:.04em;color:var(--azul);
+    font-size:15px;text-transform:uppercase;white-space:nowrap}
+  .nav__brand b{color:var(--telha)}
+  .nav__links{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .nav__links::-webkit-scrollbar{display:none}
+  .nav__links a{
+    font-size:12.5px;font-weight:500;text-decoration:none;color:var(--ink-soft);
+    padding:7px 11px;border-radius:999px;white-space:nowrap;letter-spacing:.02em;
+    transition:background .2s,color .2s;
+  }
+  .nav__links a:hover{color:var(--azul)}
+  .nav__links a.is-active{background:var(--azul);color:#fff}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;overflow:hidden;background:var(--azul-deep);color:#F4EFE3;
+    padding:clamp(70px,13vw,140px) clamp(20px,5vw,40px) clamp(60px,9vw,110px)}
+  .hero__tiles{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+  .tiles-strip{width:100%;height:100%}
+  .hero::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(120% 100% at 15% 0%,transparent 0%,rgba(14,36,64,.35) 55%,rgba(14,36,64,.85) 100%)}
+  .hero__inner{position:relative;z-index:2;max-width:1080px;margin:0 auto}
+  .eyebrow{font-size:13px;letter-spacing:.32em;text-transform:uppercase;color:var(--ouro);
+    font-weight:600;margin:0 0 18px}
+  .hero h1{font-size:clamp(46px,11vw,118px);line-height:.92;margin:0;font-weight:800;letter-spacing:-.02em}
+  .hero h1 .arrow{color:var(--telha);font-weight:500;padding:0 .12em}
+  .hero__sub{font-family:var(--body);font-size:clamp(17px,2.4vw,22px);margin:24px 0 0;max-width:30ch;
+    color:#E7E0CF;font-style:italic}
+  .hero__chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+  .chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;letter-spacing:.02em;
+    background:rgba(244,239,227,.1);border:1px solid rgba(244,239,227,.28);color:#F4EFE3;
+    padding:9px 15px;border-radius:999px;backdrop-filter:blur(4px)}
+  .chip b{color:var(--ouro);font-weight:700}
+  .scrollcue{position:relative;z-index:2;max-width:1080px;margin:46px auto 0;
+    font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#9FB2CC}
+
+  /* ---------- generic section ---------- */
+  .wrap{max-width:1080px;margin:0 auto;padding:0 clamp(20px,5vw,40px)}
+  .section{padding:clamp(54px,8vw,96px) 0}
+  .lede{font-size:clamp(20px,2.6vw,26px);line-height:1.5;max-width:36ch;margin:0;color:var(--ink)}
+  .seclabel{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--mar);margin:0 0 14px;display:flex;align-items:center;gap:12px}
+  .seclabel::before{content:"";width:26px;height:2px;background:var(--telha)}
+
+  /* ---------- stats strip ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:34px}
+  .stat{background:var(--paper);padding:22px 18px;text-align:center}
+  .stat__num{display:block;font-size:clamp(30px,5vw,44px);font-weight:800;color:var(--azul);line-height:1}
+  .stat__label{display:block;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-soft);margin-top:8px;font-weight:500}
+  @media(max-width:620px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- journey: sticky map + stops ---------- */
+  .journey{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+    gap:clamp(24px,4vw,56px);align-items:start}
+  .map-col{position:sticky;top:calc(var(--nav-h) + 22px)}
+  .map-frame{border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);
+    background:var(--paper)}
+  #map{height:min(74vh,640px);width:100%;background:#dfe7ec}
+  .map-note{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-soft);
+    padding:11px 14px;border-top:1px solid var(--line);background:var(--paper)}
+  .map-note b{color:var(--azul)}
+
+  .stops{display:flex;flex-direction:column;gap:22px}
+  .stop{background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    padding:26px 26px 28px;box-shadow:var(--shadow);scroll-margin-top:calc(var(--nav-h) + 18px);
+    cursor:pointer;transition:border-color .25s,transform .25s,box-shadow .25s;position:relative;overflow:hidden}
+  .stop::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--azul);
+    transform:scaleY(0);transform-origin:top;transition:transform .3s}
+  .stop.is-active{border-color:#cdd9ea;transform:translateY(-2px)}
+  .stop.is-active::before{transform:scaleY(1)}
+  .stop__head{display:flex;align-items:flex-start;gap:16px}
+  .tile-num{flex:none;width:50px;height:50px;border-radius:11px;display:grid;place-items:center;
+    background:var(--azul);color:#F4EFE3;font-weight:800;font-size:20px;
+    box-shadow:inset 0 0 0 3px rgba(244,239,227,.18)}
+  .stop:nth-child(7) .tile-num{background:var(--telha)}
+  .stop__titles{flex:1;min-width:0}
+  .stop h3{margin:2px 0 3px;font-size:clamp(23px,3.4vw,30px);font-weight:700;letter-spacing:-.01em;line-height:1.1}
+  .stop__dates{font-family:var(--mono);font-size:12.5px;color:var(--telha);font-weight:600;letter-spacing:.02em}
+  .stop__intro{margin:16px 0 0;color:var(--ink-soft)}
+  .stop h4{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--mar);margin:22px 0 10px;font-weight:700}
+  .doen{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .doen li{position:relative;padding-left:24px;font-size:16.5px}
+  .doen li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;border-radius:2px;
+    background:var(--ouro);transform:rotate(45deg)}
+  .meta{margin-top:18px;display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:16px}
+  .meta p{margin:0;font-size:15.5px;color:var(--ink-soft)}
+  .meta .k{font-family:var(--display);font-weight:700;color:var(--azul);font-size:12px;
+    letter-spacing:.1em;text-transform:uppercase;margin-right:6px}
+  @media(max-width:880px){
+    .journey{grid-template-columns:1fr}
+    .map-col{position:static;top:auto}
+    #map{height:340px}
+  }
+
+  /* ---------- checklist ---------- */
+  .check-sec{background:var(--azul-deep);color:#EDE6D6;position:relative;overflow:hidden}
+  .check-sec .tiles-strip{position:absolute;inset:0;opacity:.18}
+  .check-sec .wrap{position:relative;z-index:2}
+  .check-sec .seclabel{color:#D9E2F0}
+  .check-sec .seclabel::before{background:var(--ouro)}
+  .check-sec h2{font-family:var(--display);font-size:clamp(28px,5vw,42px);font-weight:800;margin:0 0 6px;letter-spacing:-.01em}
+  .check-sec p.intro{color:#B9C5D9;max-width:46ch;margin:0 0 26px}
+  .progress{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+  .progress__bar{flex:1;height:8px;border-radius:999px;background:rgba(244,239,227,.16);overflow:hidden}
+  .progress__fill{height:100%;width:0;background:linear-gradient(90deg,var(--ouro),var(--telha));
+    border-radius:999px;transition:width .4s ease}
+  .progress__txt{font-family:var(--mono);font-size:13px;color:var(--ouro);white-space:nowrap;font-weight:600}
+  .checklist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 26px}
+  @media(max-width:680px){.checklist{grid-template-columns:1fr}}
+  .checklist li{margin:0}
+  .checklist label{display:flex;gap:13px;align-items:flex-start;cursor:pointer;
+    padding:13px 15px;border:1px solid rgba(244,239,227,.16);border-radius:11px;
+    transition:background .2s,border-color .2s;font-size:16px}
+  .checklist label:hover{background:rgba(244,239,227,.06);border-color:rgba(244,239,227,.34)}
+  .checklist input{position:absolute;opacity:0;width:0;height:0}
+  .box{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid #7E92AE;margin-top:1px;
+    display:grid;place-items:center;transition:background .2s,border-color .2s}
+  .box svg{width:13px;height:13px;opacity:0;transform:scale(.5);transition:.2s}
+  .checklist input:checked + .box{background:var(--ouro);border-color:var(--ouro)}
+  .checklist input:checked + .box svg{opacity:1;transform:scale(1)}
+  .checklist input:focus-visible + .box{outline:2px solid var(--ouro);outline-offset:3px}
+  .checklist .txt{color:#EDE6D6}
+  .checklist input:checked ~ .txt{color:#8FA0B8;text-decoration:line-through}
+
+  /* ---------- tips ---------- */
+  .tips{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px;margin-top:30px}
+  @media(max-width:680px){.tips{grid-template-columns:1fr}}
+  .tip{display:flex;gap:14px;align-items:flex-start}
+  .tip__i{flex:none;width:34px;height:34px;border-radius:9px;background:#fff;border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--telha);font-family:var(--display);font-weight:800;font-size:15px}
+  .tip p{margin:0;font-size:16px;color:var(--ink-soft)}
+  .tip b{color:var(--ink);font-weight:500;font-family:var(--display)}
+
+  /* ---------- footer ---------- */
+  .foot{background:var(--azul);color:#E7E0CF;text-align:center;padding:60px 20px 50px;position:relative;overflow:hidden}
+  .foot .tiles-strip{position:absolute;inset:0;opacity:.16}
+  .foot__in{position:relative;z-index:2}
+  .foot h2{font-family:var(--display);font-size:clamp(30px,6vw,52px);margin:0;font-weight:800;color:#fff}
+  .foot p{margin:12px 0 0;color:#B9C5D9;font-style:italic}
+  .foot small{display:block;margin-top:26px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:#7E92AE}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+  /* leaflet marker */
+  .pin{display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);background:var(--azul);color:#fff;font-family:var(--display);font-weight:800;
+    font-size:14px;box-shadow:0 4px 10px rgba(14,36,64,.4);border:2px solid #F4EFE3}
+  .pin span{transform:rotate(45deg)}
+  .pin.fin{background:var(--telha)}
+  .pin.act{background:var(--ouro);color:var(--azul-deep);transform:rotate(-45deg) scale(1.22);z-index:1000}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--ouro);border:2px solid #fff;
+    box-shadow:0 2px 5px rgba(0,0,0,.3)}
+  .leaflet-popup-content-wrapper{border-radius:10px}
+  .leaflet-popup-content{font-family:var(--body);margin:12px 14px}
+  .pop-t{font-family:var(--display);font-weight:700;color:var(--azul);font-size:15px;display:block;margin-bottom:2px}
+  .pop-s{font-size:13.5px;color:var(--ink-soft)}
+
+  /* ---------- photo gallery ---------- */
+  .gallery{display:flex;gap:8px;margin-top:16px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}
+  .gallery::-webkit-scrollbar{height:6px}
+  .gallery::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+  .gthumb{flex:none;width:130px;height:90px;border-radius:10px;overflow:hidden;cursor:zoom-in;position:relative;
+    border:1px solid var(--line);background:linear-gradient(135deg,#e7ebf2,#dbe2ee);padding:0}
+  .gthumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s ease}
+  .gthumb:hover img{transform:scale(1.07)}
+  .gthumb::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(14,36,64,.28),transparent 55%)}
+  .gthumb:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
+  .gcap{position:absolute;left:7px;bottom:5px;right:7px;z-index:2;color:#fff;font-family:var(--display);
+    font-size:10.5px;font-weight:600;letter-spacing:.01em;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+
+  .lightbox{position:fixed;inset:0;z-index:3000;background:rgba(8,18,33,.93);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:24px}
+  .lightbox.open{display:flex}
+  .lb-stage{position:relative;max-width:min(1120px,94vw);max-height:86vh;display:flex;align-items:center;justify-content:center}
+  .lb-img{max-width:100%;max-height:86vh;border-radius:12px;box-shadow:0 30px 90px -20px #000;
+    object-fit:contain;background:#0E2440;display:block}
+  .lb-cap{position:fixed;bottom:24px;left:0;right:0;text-align:center;color:#EDE6D6;font-family:var(--display);
+    font-size:14px;letter-spacing:.02em;padding:0 16px}
+  .lb-cap b{color:var(--ouro)}
+  .lb-cap .num{font-family:var(--mono);font-size:12px;color:#8FA0B8;margin-left:8px}
+  .lb-btn{position:fixed;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;
+    border:1px solid rgba(244,239,227,.28);background:rgba(8,18,33,.55);color:#fff;font-size:22px;cursor:pointer;
+    display:grid;place-items:center;transition:background .2s,border-color .2s;z-index:3001}
+  .lb-btn:hover{background:rgba(244,239,227,.16);border-color:rgba(244,239,227,.5)}
+  .lb-btn:focus-visible{outline:2px solid var(--ouro);outline-offset:3px}
+  .lb-prev{left:18px}.lb-next{right:18px}
+  .lb-close{position:fixed;top:18px;right:18px;width:46px;height:46px;border-radius:50%;
+    border:1px solid rgba(244,239,227,.28);background:rgba(8,18,33,.55);color:#fff;font-size:20px;cursor:pointer;z-index:3001}
+  .lb-close:hover{background:rgba(244,239,227,.16)}
+  @media(max-width:560px){.lb-btn{width:42px;height:42px;font-size:18px}.lb-prev{left:8px}.lb-next{right:8px}}
+  @media (prefers-reduced-motion:reduce){.gthumb:hover img{transform:none}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav__brand">Porto <b>→</b> Faro</span>
+  <div class="nav__links" id="navlinks">
+    <a href="#start">Route</a>
+    <a href="#stop-1">Porto</a>
+    <a href="#stop-2">Douro</a>
+    <a href="#stop-3">Coimbra</a>
+    <a href="#stop-4">Lissabon</a>
+    <a href="#stop-5">Comporta</a>
+    <a href="#stop-6">Algarve</a>
+    <a href="#stop-7">Faro</a>
+    <a href="#checklist">Checklist</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <svg class="hero__tiles" aria-hidden="true"><rect width="100%" height="100%" fill="url(#azulejo)"/></svg>
+  <div class="hero__inner">
+    <p class="eyebrow">Roadtrip · Portugal · 2026</p>
+    <h1>Porto<span class="arrow">→</span>Faro</h1>
+    <p class="hero__sub">Van portwijn en azulejos in het noorden, langs de Douro en Lissabon, omlaag naar de gouden kliffen van de Algarve.</p>
+    <div class="hero__chips">
+      <span class="chip"><b>14</b> nachten</span>
+      <span class="chip"><b>7</b> stops</span>
+      <span class="chip">26 jul – 9 aug</span>
+      <span class="chip">met de <b>huurauto</b></span>
+      <span class="chip" id="countdown">nog … dagen</span>
+    </div>
+  </div>
+  <p class="scrollcue">↓ Scroll · de kaart reist met je mee</p>
+</header>
+
+<!-- INTRO + STATS -->
+<section class="section" id="start">
+  <div class="wrap">
+    <p class="seclabel">Het idee</p>
+    <p class="lede">Begin stedelijk en cultureel, bouw rustig af richting strand — zodat de laatste dagen pure ontspanning zijn, vlak voor de vlucht vanaf Faro.</p>
+    <div class="stats reveal">
+      <div class="stat"><span class="stat__num">≈600</span><span class="stat__label">km totaal</span></div>
+      <div class="stat"><span class="stat__num">7</span><span class="stat__label">bestemmingen</span></div>
+      <div class="stat"><span class="stat__num">3+2</span><span class="stat__label">steden &amp; kust</span></div>
+      <div class="stat"><span class="stat__num">1</span><span class="stat__label">huurauto</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- JOURNEY -->
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <p class="seclabel">De route, stap voor stap</p>
+    <div class="journey">
+      <!-- MAP -->
+      <div class="map-col">
+        <div class="map-frame reveal">
+          <div id="map" role="application" aria-label="Kaart van de route Porto naar Faro"></div>
+          <div class="map-note">Klik een halte aan om mee te reizen · <b>blauw</b> = overnachting · <b>goud</b> = uitstapje</div>
+        </div>
+      </div>
+
+      <!-- STOPS -->
+      <div class="stops">
+        <article class="stop reveal" id="stop-1" data-i="0">
+          <div class="stop__head"><div class="tile-num">1</div>
+            <div class="stop__titles"><span class="stop__dates">26 – 28 jul · 3 nachten</span><h3>Porto</h3></div></div>
+          <p class="stop__intro">Een sfeervolle havenstad van steile straatjes, tegeltableaus en portwijn. Hier heb je geen auto nodig — alles is te belopen.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>Dwaal door de Ribeira en steek de Dom Luís I-brug over naar Vila Nova de Gaia.</li>
+            <li>Tour + proeverij in de portkelders (Taylor's, Graham's of Fonseca).</li>
+            <li>Livraria Lello en station São Bento met z'n azulejo-tableaus.</li>
+          </ul>
+          <div class="meta">
+            <p><span class="k">Slapen</span>Torel 1884 Suites of Porto A.S. 1829 Hotel.</p>
+            <p><span class="k">Eten</span>Taberna dos Mercadores of Meia-Nau (vis &amp; zeevruchtenrijst).</p>
+          </div>
+        </article>
+
+        <article class="stop reveal" id="stop-2" data-i="1">
+          <div class="stop__head"><div class="tile-num">2</div>
+            <div class="stop__titles"><span class="stop__dates">29 – 30 jul · 2 nachten</span><h3>Douro-vallei</h3></div></div>
+          <p class="stop__intro">De mooiste wijnstreek van het land: groene terrassen die steil naar de rivier aflopen. Rijd de N222 langs het water — een van de mooiste autoroutes ter wereld.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>Proeverij op een quinta met uitzicht over de wijngaarden.</li>
+            <li>Korte riviercruise vanuit Pinhão of Régua.</li>
+            <li>De zonsondergang boven de vallei.</li>
+          </ul>
+          <div class="meta">
+            <p><span class="k">Slapen</span>Quinta da Pacheca (slapen in een wijnvat) of The Vintage House Hotel.</p>
+            <p><span class="k">Eten</span>Cardanho dos Presuntos in Pinhão — tapas &amp; flambé-chorizo.</p>
+          </div>
+        </article>
+
+        <article class="stop reveal" id="stop-3" data-i="2">
+          <div class="stop__head"><div class="tile-num">3</div>
+            <div class="stop__titles"><span class="stop__dates">31 jul · 1 nacht</span><h3>Coimbra &amp; Aveiro</h3></div></div>
+          <p class="stop__intro">Een tussenstop zuidwaarts. Aveiro is het “Venetië van Portugal”; Coimbra heeft een van de oudste universiteiten van Europa.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>Vaar mee in een moliceiro langs de kanalen van Aveiro.</li>
+            <li>Universiteit van Coimbra &amp; de barokke Biblioteca Joanina (vooraf boeken).</li>
+            <li>'s Avonds door de oude bovenstad — misschien fado.</li>
+          </ul>
+          <div class="meta">
+            <p><span class="k">Slapen</span>Centraal in de oude bovenstad van Coimbra.</p>
+            <p><span class="k">Eten</span>Zé Manel dos Ossos — legendarisch, cash only, kom vroeg.</p>
+          </div>
+        </article>
+
+        <article class="stop reveal" id="stop-4" data-i="3">
+          <div class="stop__head"><div class="tile-num">4</div>
+            <div class="stop__titles"><span class="stop__dates">1 – 3 aug · 3 nachten</span><h3>Lissabon + Sintra</h3></div></div>
+          <p class="stop__intro">De hoofdstad bruist van licht, muziek en eten. Reserveer één dag voor het sprookjesachtige Sintra. Zet de auto in een garage en gebruik tram en metro.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>Alfama, tram 28 en de miradouros bij zonsondergang.</li>
+            <li>Time Out Market en pastéis de nata in Belém.</li>
+            <li>Dagtrip Sintra: Palácio da Pena &amp; Quinta da Regaleira — ga vroeg.</li>
+          </ul>
+          <div class="meta">
+            <p><span class="k">Slapen</span>Santiago de Alfama of Memmo Alfama (rooftop &amp; zwembad).</p>
+            <p><span class="k">Eten</span>Taberna Sal Grosso (reserveren!) of Near Me Alfama Tapas.</p>
+          </div>
+        </article>
+
+        <article class="stop reveal" id="stop-5" data-i="4">
+          <div class="stop__head"><div class="tile-num">5</div>
+            <div class="stop__titles"><span class="stop__dates">4 – 5 aug · 2 nachten</span><h3>Alentejo-kust · Comporta</h3></div></div>
+          <p class="stop__intro">De overgang naar vakantiemodus: eindeloze witte stranden, duinen en rijstvelden. Chic maar ongedwongen. Hier heb je de auto echt nodig.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>Luieren op Praia da Comporta of Praia do Pego.</li>
+            <li>Fietsen door de rijstvelden en pijnboombossen.</li>
+            <li>Verse vis met je voeten bijna in het zand.</li>
+          </ul>
+          <div class="meta">
+            <p><span class="k">Slapen</span>Sublime Comporta of Quinta da Comporta (wellness &amp; zwembad).</p>
+            <p><span class="k">Eten</span>Comporta Café Beach Club — verse vis met zeezicht.</p>
+          </div>
+        </article>
+
+        <article class="stop reveal" id="stop-6" data-i="5">
+          <div class="stop__head"><div class="tile-num">6</div>
+            <div class="stop__titles"><span class="stop__dates">6 – 8 aug · 3 nachten</span><h3>Algarve · westkust</h3></div></div>
+          <p class="stop__intro">De grote finale: dramatische gouden kliffen, verborgen baaitjes en het wilde uiterste puntje van Europa. Baseer je rond Lagos of Sagres.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>De boardwalk bij Ponta da Piedade langs de rotsformaties.</li>
+            <li>Kajak- of boottocht naar de Benagil-grot.</li>
+            <li>Zonsondergang bij Cabo de São Vicente (Sagres).</li>
+            <li>Stranden: Praia da Marinha, Praia do Camilo, Praia da Bordeira.</li>
+          </ul>
+          <div class="meta">
+            <p><span class="k">Slapen</span>Casa Mãe in Lagos — boutique binnen de oude stadsmuren.</p>
+            <p><span class="k">Eten</span>Casinha do Petisco (cataplana!) of Marisqueira O Perceve.</p>
+          </div>
+        </article>
+
+        <article class="stop reveal" id="stop-7" data-i="6">
+          <div class="stop__head"><div class="tile-num">7</div>
+            <div class="stop__titles"><span class="stop__dates">9 aug · vertrek</span><h3>Faro</h3></div></div>
+          <p class="stop__intro">Een laatste rustige ochtend voor de terugvlucht.</p>
+          <h4>Niet missen</h4>
+          <ul class="doen">
+            <li>Wandel door de ommuurde Cidade Velha met sinaasappelbomen.</li>
+            <li>Lever de huurauto in bij de luchthaven (vlak bij de stad).</li>
+            <li>Een laatste bica en pastel de nata op een terras.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHECKLIST -->
+<section class="section check-sec" id="checklist">
+  <svg class="tiles-strip" aria-hidden="true"><rect width="100%" height="100%" fill="url(#azulejo)"/></svg>
+  <div class="wrap">
+    <p class="seclabel">Vóór je gaat</p>
+    <h2>Voorbereidingschecklist</h2>
+    <p class="intro">Hoogseizoen vraagt om vooruit boeken. Vink af wat geregeld is — je voortgang wordt op dit apparaat onthouden.</p>
+    <div class="progress">
+      <div class="progress__bar"><div class="progress__fill" id="pfill"></div></div>
+      <span class="progress__txt" id="ptxt">0 / 0</span>
+    </div>
+    <ul class="checklist" id="clist">
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Huurauto boeken (ophalen Porto, inleveren Faro)</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Accommodaties boeken — hoogseizoen!</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Pena Palace tickets + tijdslot reserveren</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Tafels reserveren (Sal Grosso, Casinha do Petisco)</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Portkelder-tour in Gaia boeken</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Benagil grot-/kajaktocht boeken</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Tolbox (Via Verde) bij huurauto navragen</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Reisverzekering &amp; ID/paspoort checken</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Offline kaarten downloaden (Google Maps)</span></label></li>
+      <li><label><input type="checkbox"><span class="box">✓</span><span class="txt">Zonnebrand, hoed &amp; herbruikbare waterfles</span></label></li>
+    </ul>
+  </div>
+</section>
+
+<!-- TIPS -->
+<section class="section">
+  <div class="wrap">
+    <p class="seclabel">Goed om te weten · eind juli / begin augustus</p>
+    <div class="tips">
+      <div class="tip reveal"><div class="tip__i">!</div><p><b>Hoogseizoen.</b> Boek auto, hotels, Pena Palace en populaire restaurants ruim vooraf.</p></div>
+      <div class="tip reveal"><div class="tip__i">☼</div><p><b>Hitte in het binnenland.</b> Douro en Alentejo kunnen richting 40 °C — plan activiteiten 's ochtends.</p></div>
+      <div class="tip reveal"><div class="tip__i">P</div><p><b>Geen auto in de stad.</b> In Porto en Lissabon is parkeren duur; gebruik een garage of OV.</p></div>
+      <div class="tip reveal"><div class="tip__i">€</div><p><b>Cash &amp; wachtrijen.</b> Kleine toprestaurants nemen geen reservering en zijn soms cash only — kom vroeg.</p></div>
+      <div class="tip reveal"><div class="tip__i">⌁</div><p><b>Tolwegen.</b> Veel snelwegen zijn elektronisch betaald; vraag naar de tolbox bij de verhuurder.</p></div>
+      <div class="tip reveal"><div class="tip__i">⏱</div><p><b>Rijtijden.</b> Porto–Lissabon ≈ 6 u, Lissabon–Algarve ≈ 3 u — prima te verdelen over de stops.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <svg class="tiles-strip" aria-hidden="true"><rect width="100%" height="100%" fill="url(#azulejo)"/></svg>
+  <div class="foot__in">
+    <h2>Boa viagem!</h2>
+    <p>Veertien dagen Portugal, van de Douro tot de Atlantische kliffen.</p>
+    <small>Persoonlijk reisplan · Porto → Faro · 2026 · Foto's via Wikimedia Commons</small>
+  </div>
+</footer>
+
+<!-- Lightbox for the photo galleries -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Foto's van de bestemming">
+  <button class="lb-close" id="lbClose" aria-label="Sluiten">✕</button>
+  <button class="lb-btn lb-prev" id="lbPrev" aria-label="Vorige foto">‹</button>
+  <div class="lb-stage"><img class="lb-img" id="lbImg" alt="" /></div>
+  <button class="lb-btn lb-next" id="lbNext" aria-label="Volgende foto">›</button>
+  <p class="lb-cap" id="lbCap"></p>
+</div>
+
+<!-- Shared azulejo tile pattern (referenced by hero, checklist & footer) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="azulejo" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="transparent"/>
+      <g fill="none" stroke="#5C7DAE" stroke-width="1.6" opacity=".85">
+        <path d="M0 40 A40 40 0 0 0 40 0"/>
+        <path d="M80 0 A40 40 0 0 0 120 40"/>
+        <path d="M120 80 A40 40 0 0 0 80 120"/>
+        <path d="M40 120 A40 40 0 0 0 0 80"/>
+        <path d="M60 8 L112 60 L60 112 L8 60 Z"/>
+      </g>
+      <g stroke="#5C7DAE" stroke-width="1.4" fill="none" opacity=".9">
+        <ellipse cx="60" cy="42" rx="7.5" ry="17"/>
+        <ellipse cx="60" cy="78" rx="7.5" ry="17"/>
+        <ellipse cx="42" cy="60" rx="17" ry="7.5"/>
+        <ellipse cx="78" cy="60" rx="17" ry="7.5"/>
+      </g>
+      <circle cx="60" cy="60" r="6.5" fill="#C2542B" opacity=".95"/>
+      <g fill="#CF9B33" opacity=".9">
+        <circle cx="0" cy="0" r="3"/><circle cx="120" cy="0" r="3"/>
+        <circle cx="0" cy="120" r="3"/><circle cx="120" cy="120" r="3"/>
+      </g>
+    </pattern>
+  </defs>
+</svg>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Countdown ---------- */
+  (function(){
+    var el=document.getElementById('countdown');
+    var target=new Date('2026-07-26T00:00:00');
+    var now=new Date();
+    var days=Math.ceil((target-now)/86400000);
+    if(days>1) el.innerHTML='nog <b>'+days+'</b> dagen';
+    else if(days===1||days===0) el.innerHTML='<b>bijna zover!</b>';
+    else el.innerHTML='<b>boa viagem!</b>';
+  })();
+
+  /* ---------- Checklist (with safe persistence) ---------- */
+  (function(){
+    var KEY='pt_roadtrip_checklist_v1';
+    var list=document.getElementById('clist');
+    var boxes=[].slice.call(list.querySelectorAll('input'));
+    var fill=document.getElementById('pfill');
+    var txt=document.getElementById('ptxt');
+    var saved=[];
+    try{saved=JSON.parse(localStorage.getItem(KEY))||[];}catch(e){saved=[];}
+    boxes.forEach(function(b,i){ if(saved[i]) b.checked=true; });
+    function render(){
+      var done=boxes.filter(function(b){return b.checked;}).length;
+      var pct=boxes.length? Math.round(done/boxes.length*100):0;
+      fill.style.width=pct+'%';
+      txt.textContent=done+' / '+boxes.length;
+      try{localStorage.setItem(KEY,JSON.stringify(boxes.map(function(b){return b.checked;})));}catch(e){}
+    }
+    boxes.forEach(function(b){ b.addEventListener('change',render); });
+    render();
+  })();
+
+  /* ---------- Scroll reveal ---------- */
+  (function(){
+    if(!('IntersectionObserver' in window)){
+      [].forEach.call(document.querySelectorAll('.reveal'),function(n){n.classList.add('in');});return;
+    }
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+    },{threshold:.12});
+    [].forEach.call(document.querySelectorAll('.reveal'),function(n){io.observe(n);});
+  })();
+
+  /* ---------- Nav active state ---------- */
+  (function(){
+    var links=[].slice.call(document.querySelectorAll('#navlinks a'));
+    var map={};
+    links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+    var sections=[].slice.call(document.querySelectorAll('[id^="stop-"], #start, #checklist'));
+    if(!('IntersectionObserver' in window))return;
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('is-active');});
+          var a=map[e.target.id]; if(a)a.classList.add('is-active');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    sections.forEach(function(s){io.observe(s);});
+  })();
+
+  /* ---------- Map ---------- */
+  var stops=[
+    {n:'1',name:'Porto',lat:41.1480,lng:-8.6109,s:'3 nachten · stad & portwijn'},
+    {n:'2',name:'Douro-vallei (Pinhão)',lat:41.1901,lng:-7.5478,s:'2 nachten · wijn & rivier'},
+    {n:'3',name:'Coimbra',lat:40.2110,lng:-8.4292,s:'1 nacht · universiteitsstad'},
+    {n:'4',name:'Lissabon',lat:38.7169,lng:-9.1399,s:'3 nachten · hoofdstad + Sintra'},
+    {n:'5',name:'Comporta',lat:38.3809,lng:-8.8035,s:'2 nachten · stranden & rijstvelden'},
+    {n:'6',name:'Lagos (Algarve)',lat:37.1028,lng:-8.6741,s:'3 nachten · kliffen & grotten'},
+    {n:'7',name:'Faro',lat:37.0146,lng:-7.9351,s:'vertrek · oude stad & luchthaven'}
+  ];
+  var spots=[
+    {name:'Aveiro',lat:40.6405,lng:-8.6538,s:'kanalen — tussenstop'},
+    {name:'Sintra',lat:38.7876,lng:-9.3906,s:'Palácio da Pena — dagtrip'},
+    {name:'Benagil-grot',lat:37.0873,lng:-8.4238,s:'zeegrot — boot/kajak'},
+    {name:'Cabo de São Vicente',lat:37.0233,lng:-8.9944,s:'zuidwestpunt van Europa'}
+  ];
+
+  var mapEl=document.getElementById('map');
+  if(typeof L==='undefined'){
+    mapEl.innerHTML='<div style="padding:24px;font-family:var(--mono);color:#456">Kaart kon niet laden — controleer je internetverbinding. Het reisplan hieronder werkt gewoon.</div>';
+    return;
+  }
+
+  var map=L.map(mapEl,{scrollWheelZoom:false,zoomControl:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:18, attribution:'© OpenStreetMap'
+  }).addTo(map);
+
+  var line=L.polyline(stops.map(function(p){return [p.lat,p.lng];}),
+    {color:'#173A6A',weight:3,opacity:.7,dashArray:'2 7',lineCap:'round'}).addTo(map);
+
+  // secondary spots
+  spots.forEach(function(p){
+    L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div class="dot"></div>',iconSize:[11,11],iconAnchor:[6,6]})})
+      .addTo(map)
+      .bindPopup('<span class="pop-t">'+p.name+'</span><span class="pop-s">'+p.s+'</span>');
+  });
+
+  var markers=[];
+  stops.forEach(function(p,i){
+    var fin=(i===stops.length-1)?' fin':'';
+    var m=L.marker([p.lat,p.lng],{icon:L.divIcon({
+      className:'',html:'<div class="pin'+fin+'"><span>'+p.n+'</span></div>',
+      iconSize:[30,30],iconAnchor:[15,28],popupAnchor:[0,-26]
+    })}).addTo(map);
+    m.bindPopup('<span class="pop-t">'+p.n+'. '+p.name+'</span><span class="pop-s">'+p.s+'</span>');
+    m.on('click',function(){
+      var card=document.getElementById('stop-'+p.n);
+      if(card) card.scrollIntoView({behavior:'smooth',block:'center'});
+      setActive(i);
+    });
+    markers.push(m);
+  });
+
+  map.fitBounds(line.getBounds().pad(0.16));
+
+  var reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var activeI=-1;
+  function setActive(i){
+    if(i===activeI)return; activeI=i;
+    markers.forEach(function(m,j){
+      var box=m.getElement(); if(!box)return;
+      var pin=box.querySelector('.pin'); if(!pin)return;
+      pin.classList.toggle('act',j===i);
+    });
+    document.querySelectorAll('.stop').forEach(function(s,j){s.classList.toggle('is-active',j===i);});
+  }
+
+  // click a card -> focus marker
+  document.querySelectorAll('.stop').forEach(function(card,i){
+    card.addEventListener('click',function(){
+      var p=stops[i];
+      if(!reduce) map.panTo([p.lat,p.lng],{animate:true,duration:.6});
+      markers[i].openPopup();
+      setActive(i);
+    });
+  });
+
+  // scroll through stops -> map follows the most-visible one
+  if('IntersectionObserver' in window){
+    var visible={};
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ visible[e.target.dataset.i]=e.intersectionRatio; });
+      var best=-1,bestR=0;
+      Object.keys(visible).forEach(function(k){ if(visible[k]>bestR){bestR=visible[k];best=+k;} });
+      if(best>=0 && bestR>0.25){
+        var p=stops[best];
+        if(!reduce && window.innerWidth>880) map.panTo([p.lat,p.lng],{animate:true,duration:.8});
+        setActive(best);
+      }
+    },{threshold:[.25,.5,.75]});
+    document.querySelectorAll('.stop').forEach(function(s){io.observe(s);});
+  }
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+  var BASE='https://commons.wikimedia.org/wiki/Special:FilePath/';
+  function url(file,w){ return BASE+encodeURIComponent(file)+'?width='+w; }
+
+  // Vrij gelicentieerde foto's (Wikimedia Commons), per stop.
+  var PHOTOS={
+    0:[['Porto view from Vila Nova de Gaia (27078365799).jpg','Ribeira vanaf Vila Nova de Gaia'],
+       ['Puente de Don Luis I, Oporto, Portugal, 2019-06-02, DD 29-31 HDR.jpg','Ponte Dom Luís I bij avond']],
+    1:[['Pinhão train station 02.jpg','Station Pinhão — azulejos'],
+       ['Rio Douro carca de Pinhao (17074934664).jpg','De Douro bij Pinhão'],
+       ['Wine tasting Quinta das Carvalhas.jpg','Wijnproeven op een quinta']],
+    2:[['University of Coimbra - Alta and Sofia 45 (42862754944).jpg','Universiteit van Coimbra'],
+       ['Coimbra December 2011-19a.jpg','Coimbra aan de Mondego'],
+       ['Farol da Barra-Aveiro.JPG','Costa Nova bij Aveiro']],
+    3:[['Sintra - Palacio da Pena (20332995770).jpg','Palácio da Pena, Sintra'],
+       ['Commerce Square Lisbon.jpg','Praça do Comércio, Lissabon']],
+    4:[['Praia da Comporta - Portugal (50093632712).jpg','Praia da Comporta'],
+       ['Praia do Pego - Comporta (Carvalhal).jpg','Praia do Pego']],
+    5:[['Beach Praia Dona Ana Lagos (158928103).jpg','Praia Dona Ana, Lagos'],
+       ['Algarve - Marinha Beach (16822212191).jpg','Praia da Marinha'],
+       ['Cape St. Vincent (Sagres, Algarve) (20927438946).jpg','Cabo de São Vicente']],
+    6:[['Faro Cidade Velha 2.JPG','Cidade Velha, Faro'],
+       ['Faro Cidade Velha 3.JPG','Sé van Faro']]
+  };
+  var PLACE={0:'Porto',1:'Douro-vallei',2:'Coimbra & Aveiro',3:'Lissabon & Sintra',4:'Comporta',5:'Algarve',6:'Faro'};
+
+  // Build a thumbnail strip inside every stop card
+  document.querySelectorAll('.stop').forEach(function(card){
+    var i=+card.dataset.i;
+    var list=PHOTOS[i]; if(!list||!list.length) return;
+    var strip=document.createElement('div');
+    strip.className='gallery';
+    strip.setAttribute('aria-label','Foto\u2019s van '+PLACE[i]);
+    list.forEach(function(p,idx){
+      var b=document.createElement('button');
+      b.className='gthumb'; b.type='button';
+      b.setAttribute('aria-label','Bekijk foto: '+p[1]);
+      var img=document.createElement('img');
+      img.loading='lazy'; img.decoding='async'; img.alt=p[1];
+      img.src=url(p[0],480);
+      img.onerror=function(){ b.style.display='none'; };
+      var cap=document.createElement('span'); cap.className='gcap'; cap.textContent=p[1];
+      b.appendChild(img); b.appendChild(cap);
+      b.addEventListener('click',function(e){ e.stopPropagation(); open(i,idx); });
+      strip.appendChild(b);
+    });
+    var intro=card.querySelector('.stop__intro');
+    if(intro&&intro.nextSibling) intro.parentNode.insertBefore(strip,intro.nextSibling);
+    else card.appendChild(strip);
+  });
+
+  // Lightbox
+  var box=document.getElementById('lightbox'),
+      lbImg=document.getElementById('lbImg'),
+      lbCap=document.getElementById('lbCap'),
+      curStop=0, curIdx=0, lastFocus=null;
+
+  function show(){
+    var list=PHOTOS[curStop], p=list[curIdx];
+    lbImg.src=url(p[0],1400); lbImg.alt=p[1];
+    lbCap.innerHTML='<b>'+PLACE[curStop]+'</b> — '+p[1]+'<span class="num">'+(curIdx+1)+' / '+list.length+'</span>';
+  }
+  function open(stop,idx){
+    curStop=stop; curIdx=idx; lastFocus=document.activeElement;
+    show(); box.classList.add('open');
+    document.body.style.overflow='hidden';
+    document.getElementById('lbClose').focus();
+  }
+  function close(){
+    box.classList.remove('open'); lbImg.src=''; document.body.style.overflow='';
+    if(lastFocus&&lastFocus.focus) lastFocus.focus();
+  }
+  function step(d){
+    var n=PHOTOS[curStop].length; curIdx=(curIdx+d+n)%n; show();
+  }
+  document.getElementById('lbClose').addEventListener('click',close);
+  document.getElementById('lbPrev').addEventListener('click',function(){step(-1);});
+  document.getElementById('lbNext').addEventListener('click',function(){step(1);});
+  box.addEventListener('click',function(e){ if(e.target===box||e.target.classList.contains('lb-stage')) close(); });
+  document.addEventListener('keydown',function(e){
+    if(!box.classList.contains('open')) return;
+    if(e.key==='Escape') close();
+    else if(e.key==='ArrowLeft') step(-1);
+    else if(e.key==='ArrowRight') step(1);
+  });
+})();
+</script>
+</body>
+</html>
